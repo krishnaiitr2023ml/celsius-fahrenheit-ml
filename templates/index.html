@@ -1,64 +1,218 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Celsius → Fahrenheit ML</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111827" />
+  <title>Celsius → Fahrenheit | ML Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-  <main class="card">
-    <div class="badge">ML Temperature Converter</div>
-    <h1>Celsius to Fahrenheit</h1>
-    <p class="sub">Enter a Celsius temperature and get the model prediction.</p>
+  <div class="background-shape shape-one"></div>
+  <div class="background-shape shape-two"></div>
 
-    <form id="converterForm">
-      <label for="celsius">Temperature in Celsius (°C)</label>
-      <div class="input-row">
-        <input id="celsius" name="celsius" type="number" step="any" placeholder="e.g. 100" required>
-        <button type="submit">Predict</button>
+  <main class="page-shell">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          <span class="pulse-dot"></span>
+          TensorFlow Neural Network
+        </div>
+
+        <h1>Temperature conversion,<br><span>predicted by ML.</span></h1>
+
+        <p class="hero-text">
+          Enter a Celsius value and let the trained neural network predict
+          the corresponding Fahrenheit temperature.
+        </p>
+
+        <div class="model-tags">
+          <span>Dense 4 → 4 → 1</span>
+          <span>Adam</span>
+          <span>800 epochs</span>
+        </div>
       </div>
-    </form>
 
-    <section id="result" class="result hidden">
-      <span id="cValue"></span>
-      <span class="arrow">→</span>
-      <strong id="fValue"></strong>
+      <div class="converter-card">
+        <div class="converter-head">
+          <div>
+            <p class="section-label">Temperature Converter</p>
+            <h2>Celsius to Fahrenheit</h2>
+          </div>
+          <div class="unit-badge">°C → °F</div>
+        </div>
+
+        <form id="converterForm">
+          <label for="celsius">Celsius temperature</label>
+
+          <div class="input-wrap">
+            <input
+              id="celsius"
+              name="celsius"
+              type="number"
+              step="any"
+              placeholder="Enter value"
+              autocomplete="off"
+              required
+            />
+            <span class="input-unit">°C</span>
+          </div>
+
+          <div class="quick-values" aria-label="Quick values">
+            <button type="button" class="chip" data-value="0">0°</button>
+            <button type="button" class="chip" data-value="20">20°</button>
+            <button type="button" class="chip" data-value="37">37°</button>
+            <button type="button" class="chip" data-value="100">100°</button>
+          </div>
+
+          <button type="submit" class="predict-btn" id="predictBtn">
+            <span id="btnText">Predict Fahrenheit</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+
+        <div id="message" class="message" role="status"></div>
+
+        <div id="resultPanel" class="result-panel hidden">
+          <div class="result-caption">Predicted temperature</div>
+
+          <div class="result-main">
+            <div class="temp-block">
+              <span id="cValue" class="temp-number">0</span>
+              <span class="temp-unit">°C</span>
+            </div>
+
+            <div class="conversion-arrow">→</div>
+
+            <div class="temp-block result-highlight">
+              <span id="fValue" class="temp-number">32</span>
+              <span class="temp-unit">°F</span>
+            </div>
+          </div>
+
+          <div class="result-footer">
+            <span class="status-dot"></span>
+            Prediction generated successfully
+          </div>
+        </div>
+      </div>
     </section>
 
-    <p id="error" class="error"></p>
-    <p class="note">Model trained from the Celsius/Fahrenheit examples in the supplied notebook.</p>
+    <section class="info-grid">
+      <article class="info-card">
+        <div class="icon-box">01</div>
+        <h3>Enter a value</h3>
+        <p>Type any Celsius temperature or select one of the quick values.</p>
+      </article>
+
+      <article class="info-card">
+        <div class="icon-box">02</div>
+        <h3>Model predicts</h3>
+        <p>Your TensorFlow neural network processes the value on the server.</p>
+      </article>
+
+      <article class="info-card">
+        <div class="icon-box">03</div>
+        <h3>View the result</h3>
+        <p>The Fahrenheit prediction is displayed instantly on the page.</p>
+      </article>
+    </section>
+
+    <footer>
+      <span>ML Temperature Converter</span>
+      <span class="footer-separator">•</span>
+      <span>TensorFlow + Flask</span>
+    </footer>
   </main>
 
   <script>
-    const form = document.getElementById('converterForm');
-    const result = document.getElementById('result');
-    const errorBox = document.getElementById('error');
+    const form = document.getElementById("converterForm");
+    const input = document.getElementById("celsius");
+    const resultPanel = document.getElementById("resultPanel");
+    const cValue = document.getElementById("cValue");
+    const fValue = document.getElementById("fValue");
+    const message = document.getElementById("message");
+    const predictBtn = document.getElementById("predictBtn");
+    const btnText = document.getElementById("btnText");
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errorBox.textContent = '';
-      result.classList.add('hidden');
+    document.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        input.value = chip.dataset.value;
+        input.focus();
+      });
+    });
 
-      const celsius = document.getElementById('celsius').value;
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const celsius = input.value.trim();
+      if (celsius === "") {
+        showError("Please enter a Celsius value.");
+        return;
+      }
+
+      setLoading(true);
+      message.textContent = "";
+      resultPanel.classList.add("hidden");
 
       try {
-        const response = await fetch('/predict', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({celsius})
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ celsius })
         });
 
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Prediction failed.');
 
-        document.getElementById('cValue').textContent = `${data.celsius} °C`;
-        document.getElementById('fValue').textContent = `${data.fahrenheit} °F`;
-        result.classList.remove('hidden');
-      } catch (err) {
-        errorBox.textContent = err.message;
+        if (!response.ok) {
+          throw new Error(data.error || "Prediction failed.");
+        }
+
+        cValue.textContent = formatNumber(data.celsius);
+        fValue.textContent = formatNumber(data.fahrenheit);
+
+        resultPanel.classList.remove("hidden");
+        resultPanel.classList.add("show");
+
+        setTimeout(() => {
+          resultPanel.classList.remove("show");
+        }, 500);
+
+      } catch (error) {
+        showError(error.message || "Unable to connect to the prediction service.");
+      } finally {
+        setLoading(false);
       }
     });
+
+    function formatNumber(value) {
+      const number = Number(value);
+      if (Number.isNaN(number)) return value;
+      return Number.isInteger(number) ? number : number.toFixed(2);
+    }
+
+    function showError(text) {
+      message.textContent = text;
+      message.className = "message error";
+    }
+
+    function setLoading(isLoading) {
+      predictBtn.disabled = isLoading;
+
+      if (isLoading) {
+        btnText.textContent = "Predicting...";
+        predictBtn.classList.add("loading");
+      } else {
+        btnText.textContent = "Predict Fahrenheit";
+        predictBtn.classList.remove("loading");
+      }
+    }
   </script>
 </body>
 </html>
